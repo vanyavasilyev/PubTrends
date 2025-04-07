@@ -25,4 +25,4 @@ While the task is relatively small, it would take more time to make it perfectly
 
 - **Documentation**: even if I tried to let functions' names describe what they do clearly and employed typings, it is still better to add documentation.
 - **Web page**: The page is not convenient enough.
-- **Refactoring**: there are many things to refactor, i.e. the `create_app` function, it is not crucial for such a small application though.
+- **Refactoring**: there are many things to refactor, e.g. the `create_app` function, it is not crucial for such a small application though.
