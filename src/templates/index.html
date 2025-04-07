@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GEO Datasets Represenatation</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        .controls {
+            margin-bottom: 20px;
+        }
+        #scatter-plot {
+            width: 100%;
+            height: 500px;
+        }
+        .select-all-container {
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Choose PMIDs</h1>
+    <div class="controls">
+        <div class="select-all-container">
+            <label for="select-all">
+                <input type="checkbox" id="select-all"> Select All
+            </label>
+        </div>
+        <div id="checkbox-container">
+            
+        </div>
+        <button id="fetch-data">Generate Plot</button>
+    </div>
+
+    <div id="scatter-plot"></div>
+</div>
+
+<script>
+    const checkboxContainer = document.getElementById('checkbox-container');
+    const fetchDataButton = document.getElementById('fetch-data');
+    const scatterPlot = document.getElementById('scatter-plot');
+    const selectAllCheckbox = document.getElementById('select-all');
+
+    const pmids = {{ pmids }}
+    let selectedPMIDs = [];
+
+    function populateCheckboxes() {
+        checkboxContainer.innerHTML = '';
+
+        pmids.forEach(num => {
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.value = num;
+            checkbox.id = `checkbox-${num}`;
+
+            const label = document.createElement('label');
+            label.htmlFor = `checkbox-${num}`;
+            label.innerText = `Publication ${num}`;
+
+            checkbox.addEventListener('change', () => {
+                if (checkbox.checked) {
+                    selectedPMIDs.push(num);
+                } else {
+                    selectedPMIDs = selectedPMIDs.filter(n => n !== num);
+                }
+            });
+
+            checkboxContainer.appendChild(checkbox);
+            checkboxContainer.appendChild(label);
+            checkboxContainer.appendChild(document.createElement('br'));
+        });
+    }
+
+    selectAllCheckbox.addEventListener('change', () => {
+        const allCheckboxes = document.querySelectorAll('#checkbox-container input[type="checkbox"]');
+        if (selectAllCheckbox.checked) {
+            selectedPMIDs = [...pmids];
+            allCheckboxes.forEach(checkbox => checkbox.checked = true);
+        } else {
+            selectedPMIDs = [];
+            allCheckboxes.forEach(checkbox => checkbox.checked = false);
+        }
+    });
+
+    async function fetchData() {
+        if (selectedPMIDs.length === 0) {
+            alert("Please select at least one number.");
+            return;
+        }
+
+        const response = await fetch(`/api/get_points?pmids=${selectedPMIDs.join(',')}`);
+        const data = await response.json();
+
+        const x = [];
+        const y = [];
+        const text = [];
+        const color = [];
+
+        function getColorFromId(id) {
+            const hue = (id * 137) % 360;
+            return `hsl(${hue}, 50%, 50%)`;
+        }
+
+        data.forEach(point => {
+            x.push(point.x);
+            y.push(point.y);
+            text.push(`GEO ID: ${point.geo_id} | PMIDs: ${point.pmids.join(', ')}`);
+            color.push(getColorFromId(point.pmids[0]));
+        });
+
+        const trace = {
+            x: x,
+            y: y,
+            mode: 'markers',
+            type: 'scatter',
+            opacity: 0.85,
+            marker: { 
+                color: color,
+                size: 12,
+                line: {
+                    width: 1,
+                    color: "black"
+                }
+            },
+            text: text,
+            hoverinfo: 'text',
+        };
+
+        const layout = {
+            title: 'Scatter Plot of Datasets Vectors',
+            xaxis: { title: 'X' },
+            yaxis: { title: 'Y' },
+        };
+
+        Plotly.newPlot(scatterPlot, [trace], layout);
+    }
+
+    populateCheckboxes();
+
+    fetchDataButton.addEventListener('click', fetchData);
+</script>
+
+</body>
+</html>
